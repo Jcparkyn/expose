@@ -70,13 +70,10 @@ public static class Expose
             if (node.Method.Name == nameof(Call) &&
                 node.Method.DeclaringType == typeof(Expose))
             {
-                // Extract the lambda expression and the argument
                 var callee = node.Arguments[0];
                 var argument = node.Arguments[1];
 
-                //var lambda = callee.
-
-                // Replace the Call method call with an invocation of the lambda expression
+                // Replace the Call method call with an invocation of the callee
                 return Expression.Invoke(callee, argument);
             }
 
