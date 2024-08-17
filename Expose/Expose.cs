@@ -22,11 +22,25 @@ public static class Expose
         return Expression.Lambda<Func<T1, T3>>(replacedBody, firstParameter);
     }
 
-    public static Expression<Func<T1, T2>> Wrap<F1, T1, T2>(
+    public static Expression<FReturn> Wrap<F1, FReturn>(
         Expression<F1> wrapped,
-        Expression<Func<F1, Func<T1, T2>>> wrapper)
+        Expression<Func<F1, FReturn>> wrapper)
+        where F1 : Delegate
+        where FReturn : Delegate
     {
-        throw new NotImplementedException();
+        // Extract the parameter from the wrapper, which is the wrapped expression
+        var wrappedParameter = wrapper.Parameters[0];
+
+        // Extract the body from the wrapper, which is a func use
+        var wrapperBody = wrapper.Body;
+
+        // Substitute the wrapped expression into the wrapper body
+        var replacedBody = new ReplaceParameterVisitor(wrappedParameter, wrapped).Visit(wrapperBody) as LambdaExpression;
+
+        // Finally, create a new lambda with the body of the replaced wrapper
+        var finalLambda = Expression.Lambda<FReturn>(replacedBody.Body, wrapped.Parameters);
+
+        return finalLambda;
     }
 
     public static Expression<TReturn> Wrap<F1, F2, TReturn>(
@@ -35,6 +49,58 @@ public static class Expose
         Expression<Func<F1, F2, TReturn>> wrapper)
     {
         throw new NotImplementedException();
+    }
+
+    public static Expression<Func<T1, T2>> Compose<T1, T2>(Expression<Func<T1, T2>> value)
+    {
+        var visitor = new CallMethodReplacer();
+        var newBody = visitor.Visit(value.Body);
+        return Expression.Lambda<Func<T1, T2>>(newBody, value.Parameters);
+    }
+
+    public static T2 Call<T1, T2>(this Expression<Func<T1, T2>> expr, T1 arg)
+    {
+        throw new InvalidOperationException();
+    }
+
+    private class CallMethodReplacer : ExpressionVisitor
+    {
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.Name == nameof(Call) &&
+                node.Method.DeclaringType == typeof(Expose))
+            {
+                // Extract the lambda expression and the argument
+                var callee = node.Arguments[0];
+                var argument = node.Arguments[1];
+
+                //var lambda = callee.
+
+                // Replace the Call method call with an invocation of the lambda expression
+                return Expression.Invoke(callee, argument);
+            }
+
+            return base.VisitMethodCall(node);
+        }
+    }
+
+    private class ReplaceParameterVisitor : ExpressionVisitor
+    {
+        private readonly ParameterExpression _parameter;
+        private readonly Expression _replacement;
+
+        public ReplaceParameterVisitor(ParameterExpression parameter, Expression replacement)
+        {
+            _parameter = parameter;
+            _replacement = replacement;
+        }
+
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            if (node == _parameter)
+                return _replacement;
+            return base.VisitParameter(node);
+        }
     }
 }
 
