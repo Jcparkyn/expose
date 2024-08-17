@@ -23,11 +23,8 @@ namespace Expose.Tests
         public void Wrap()
         {
             Expression<Func<int, int>> addOne = x => x + 1;
-            //var wrapped = Expose.Wrap<int, int, bool>(addOne, addOne =>
-            //    x => addOne(x) == 3
-            //);
-            var wrapped = Expose.Returning_<bool>().Wrap(addOne, addOne =>
-                x => addOne(x) == 3
+            var wrapped = Expose.Wrap(addOne, addOne =>
+                Expose.Func((int x) => addOne(x) == 3)
             );
             var output1 = wrapped.Compile().Invoke(1);
             output1.Should().BeFalse();
@@ -40,20 +37,9 @@ namespace Expose.Tests
         {
             Expression<Func<int, bool>> isNegative = x => x < 0;
             Expression<Func<int, int>> mod2 = x => x % 2;
-            var wrapped = Expose.Returning<Func<int, bool>>.Wrap(
-                (isNegative, mod2),
-                (isNegative, mod2) =>
-                    (int x) => isNegative(x) || mod2(x) == 1
-            );
 
-            var wrapped2 = Expose.Accepting<int>.Wrap(
-                (isNegative, mod2),
-                (isNegative, mod2) =>
-                    (Func<int, bool>)(x => isNegative(x) || mod2(x) == 1)
-            );
-
-            var wrapped3 = Expose.WrapSimple2(
-                (isNegative, mod2),
+            var wrapped = Expose.Wrap(
+                isNegative, mod2,
                 (isNegative, mod2) => Expose.Func(
                     (int x) => isNegative(x) || mod2(x) == 1
                 )
