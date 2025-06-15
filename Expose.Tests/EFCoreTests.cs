@@ -41,18 +41,17 @@ public class EFCoreTests(ITestOutputHelper output)
     {
         var options = Connect();
 
-        var getLowerName = Expose.Expr((MyEntity e) => e.Name.ToLower());
+        Expression<Func<MyEntity, string>> getFullName = e => e.FirstName + " " + e.LastName;
 
         using var context = new MyDbContext(options);
         var result = context.MyEntities
             .Select(Expose.Compose((MyEntity e) => new
             {
                 e.Id,
-                LowerName = getLowerName.Call(e),
+                FullName = getFullName.Call(e),
             }))
-            .Single(e => e.LowerName == "mike");
-        //result.Should().HaveCount(3);
-        result.LowerName.Should().Be("mike");
+            .Single(e => e.FullName == "Mike Stack");
+        result.FullName.Should().Be("Mike Stack");
     }
 
     private DbContextOptions<MyDbContext> Connect()
@@ -71,9 +70,9 @@ public class EFCoreTests(ITestOutputHelper output)
         {
             context.Database.EnsureCreated();
             // Seed data
-            context.MyEntities.Add(new MyEntity { Age = -1, Name = "Jeff" });
-            context.MyEntities.Add(new MyEntity { Age = 0, Name = "Mike" });
-            context.MyEntities.Add(new MyEntity { Age = 1, Name = "Andy" });
+            context.MyEntities.Add(new MyEntity { Age = -1, FirstName = "Jeff", LastName = "Bridges" });
+            context.MyEntities.Add(new MyEntity { Age = 0, FirstName = "Mike", LastName = "Stack" });
+            context.MyEntities.Add(new MyEntity { Age = 1, FirstName = "Andy", LastName = "Bennet" });
             context.SaveChanges();
         }
 
@@ -87,7 +86,8 @@ public class MyEntity
     [Key]
     public int Id { get; set; }
     public int Age { get; set; }
-    public required string Name { get; set; }
+    public required string FirstName { get; set; }
+    public required string LastName { get; set; }
 }
 
 public class MyDbContext : DbContext
