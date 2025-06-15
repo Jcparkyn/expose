@@ -17,23 +17,16 @@ public class EFCoreTests(ITestOutputHelper output)
     {
         var options = Connect();
 
-        // Expressions to be composed
         Expression<Func<int, bool>> isNegative = x => x < 0;
-        Expression<Func<int, int>> mod2 = x => x % 2;
-
-        // Composing the expression
-        var wrapped = Expose.Compose(
-            (MyEntity e) => isNegative.Call(e.Age) || mod2.Call(e.Age) == 1
-        );
 
         using var context = new MyDbContext(options);
         var result = context.MyEntities
-            .Where(wrapped)
-            .ToList();
+            .Where(e => isNegative.Call(e.Age))
+            .SubstituteCalls()
+            .Single();
 
-        result.Should().HaveCount(2);
-        result.Should().ContainSingle(e => e.Age == -1);
-        result.Should().ContainSingle(e => e.Age == 1);
+        result.Age.Should().Be(-1);
+        result.FirstName.Should().Be("Jeff");
     }
 
     [Fact]
@@ -45,11 +38,12 @@ public class EFCoreTests(ITestOutputHelper output)
 
         using var context = new MyDbContext(options);
         var result = context.MyEntities
-            .Select(Expose.Compose((MyEntity e) => new
+            .Select(e => new
             {
                 e.Id,
                 FullName = getFullName.Call(e),
-            }))
+            })
+            .SubstituteCalls()
             .Single(e => e.FullName == "Mike Stack");
         result.FullName.Should().Be("Mike Stack");
     }
@@ -95,14 +89,6 @@ public class MyDbContext : DbContext
     public DbSet<MyEntity> MyEntities { get; set; }
 
     public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
-
-    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //{
-    //    if (!optionsBuilder.IsConfigured)
-    //    {
-    //        optionsBuilder.UseSqlite("Data Source=InMemorySample;Mode=Memory;Cache=Shared");
-    //    }
-    //}
 }
 
 record WhyDoINeedToDoThis(ILoggerFactory factory) : ILoggerProvider

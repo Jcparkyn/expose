@@ -1,6 +1,7 @@
 ﻿namespace Expose;
 
 using System.Linq.Expressions;
+using System.Reflection;
 
 public static class Expose
 {
@@ -34,6 +35,14 @@ public static class Expose
         throw new InvalidOperationException();
     }
 
+    public static IQueryable<T> SubstituteCalls<T>(this IQueryable<T> self)
+    {
+        ArgumentNullException.ThrowIfNull(self);
+        var visitor = new CallMethodReplacer();
+        var newExpression = visitor.Visit(self.Expression);
+        return self.Provider.CreateQuery<T>(newExpression);
+    }
+
     private class CallMethodReplacer : ExpressionVisitor
     {
         protected override Expression VisitMethodCall(MethodCallExpression node)
@@ -45,10 +54,31 @@ public static class Expose
                 var argument = node.Arguments[1];
 
                 // Replace the Call method call with an invocation of the callee
-                return Expression.Invoke(callee, argument);
+                return Expression.Invoke(SimplifyCallee(callee), argument);
             }
 
             return base.VisitMethodCall(node);
+        }
+
+        /// <summary>
+        /// Simplifies the callee expression if it's a reference to a constant field or property.
+        /// </summary>
+        private static Expression SimplifyCallee(Expression callee)
+        {
+            if (callee is MemberExpression
+                {
+                    Expression: ConstantExpression { Value: { } constant },
+                    Member: var member
+                })
+            {
+                return member switch
+                {
+                    FieldInfo fi => Expression.Constant(fi.GetValue(constant), callee.Type),
+                    PropertyInfo pi => Expression.Constant(pi.GetValue(constant), callee.Type),
+                    _ => callee
+                };
+            }
+            return callee;
         }
     }
 

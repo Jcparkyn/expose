@@ -34,4 +34,20 @@ public class ExposeTests
         compiled.Invoke(0).Should().BeFalse();
         compiled.Invoke(1).Should().BeTrue();
     }
+
+    [Fact]
+    public void Compose_SimpleFunction_ExpressionEquals()
+    {
+        Expression<Func<int, int>> plusOne = x => x + 1;
+        var composed = Expose.Compose((int x) => plusOne.Call(x));
+
+        var param = Expression.Parameter(typeof(int), "x");
+        var expected = Expression.Lambda<Func<int, int>>(
+            Expression.Invoke(plusOne, param),
+            param
+        );
+
+        composed.ToString().Should().Be(expected.ToString());
+        composed.Should().Be(expected);
+    }
 }
