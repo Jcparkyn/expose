@@ -1,4 +1,4 @@
-﻿namespace Expose;
+namespace Expose;
 
 using System.Linq.Expressions;
 using System.Reflection;
@@ -37,7 +37,7 @@ public static class Expose
 
     public static IQueryable<T> SubstituteCalls<T>(this IQueryable<T> self)
     {
-        ArgumentNullException.ThrowIfNull(self);
+        _ = self ?? throw new ArgumentNullException(nameof(self));
         var visitor = new CallMethodReplacer();
         var newExpression = visitor.Visit(self.Expression);
         return self.Provider.CreateQuery<T>(newExpression);
