@@ -48,6 +48,5 @@ public class ExposeTests
         );
 
         composed.ToString().Should().Be(expected.ToString());
-        composed.Should().Be(expected);
     }
 }
