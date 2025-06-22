@@ -25,6 +25,15 @@ public static class ExposeUtils
         return Expression.Lambda<Func<T1, T3>>(replacedBody, firstParameter);
     }
 
+    private static Expression<TDelegate> SubstituteCallsInternal<TDelegate>(Expression<TDelegate> value)
+    {
+        // Separate method name so we don't accidentally call the same method recursively.
+        _ = value ?? throw new ArgumentNullException(nameof(value));
+        var visitor = new CallMethodReplacer();
+        var newBody = visitor.Visit(value.Body);
+        return Expression.Lambda<TDelegate>(newBody, value.Parameters);
+    }
+
     /// <summary>
     /// Replaces calls to the <see cref="Call{TRet}(Expression{Func{TRet}})"/> method with the actual method call in the expression tree.
     /// </summary>
@@ -32,22 +41,16 @@ public static class ExposeUtils
     /// <param name="value"></param>
     /// <returns></returns>
     /// <exception cref="ArgumentNullException"></exception>
-    public static Expression<TDelegate> SubstituteCalls<TDelegate>(Expression<TDelegate> value)
-    {
-        _ = value ?? throw new ArgumentNullException(nameof(value));
-        var visitor = new CallMethodReplacer();
-        var newBody = visitor.Visit(value.Body);
-        return Expression.Lambda<TDelegate>(newBody, value.Parameters);
-    }
+    public static Expression<TDelegate> SubstituteCalls<TDelegate>(Expression<TDelegate> value) => SubstituteCallsInternal(value);
 
     /// <inheritdoc cref="SubstituteCalls{TDelegate}(Expression{TDelegate})"/>
-    public static Expression<Func<T1>> SubstituteCalls<T1>(Expression<Func<T1>> value) => SubstituteCalls(value);
+    public static Expression<Func<T1>> SubstituteCalls<T1>(Expression<Func<T1>> value) => SubstituteCallsInternal(value);
 
     /// <inheritdoc cref="SubstituteCalls{TDelegate}(Expression{TDelegate})"/>
-    public static Expression<Func<T1, T2>> SubstituteCalls<T1, T2>(Expression<Func<T1, T2>> value) => SubstituteCalls(value);
+    public static Expression<Func<T1, T2>> SubstituteCalls<T1, T2>(Expression<Func<T1, T2>> value) => SubstituteCallsInternal(value);
 
     /// <inheritdoc cref="SubstituteCalls{TDelegate}(Expression{TDelegate})"/>
-    public static Expression<Func<T1, T2, T3>> SubstituteCalls<T1, T2, T3>(Expression<Func<T1, T2, T3>> value) => SubstituteCalls(value);
+    public static Expression<Func<T1, T2, T3>> SubstituteCalls<T1, T2, T3>(Expression<Func<T1, T2, T3>> value) => SubstituteCallsInternal(value);
 
     /// <summary>
     /// A method to represent a call to another expression, from within an expression tree.
