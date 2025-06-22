@@ -7,7 +7,7 @@ using System.Reflection;
 /// <summary>
 /// Class containing utility methods for composing and exposing <see cref="Expression"/> trees.
 /// </summary>
-public static class ExposeUtils
+public static class ExpressionComposer
 {
     /// <summary>
     /// Returns an expression that is equivalent to <c>x => second(first(x))</c>
@@ -95,7 +95,7 @@ public static class ExposeUtils
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
             if (node.Method.Name == nameof(Call) &&
-                node.Method.DeclaringType == typeof(ExposeUtils))
+                node.Method.DeclaringType == typeof(ExpressionComposer))
             {
                 var callee = node.Arguments[0];
                 var argument = node.Arguments[1];

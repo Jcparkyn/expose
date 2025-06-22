@@ -21,7 +21,7 @@ public class ExposeTests
         Expression<Func<int, bool>> isNegative = x => x < 0;
         Expression<Func<int, int>> mod2 = x => x % 2;
 
-        var wrapped = ExposeUtils.SubstituteCalls(
+        var wrapped = ExpressionComposer.SubstituteCalls(
             (int x) => isNegative.Call(x) || mod2.Call(x) == 1
         );
 
@@ -35,7 +35,7 @@ public class ExposeTests
     public void Compose_SimpleFunction_ExpressionEquals()
     {
         Expression<Func<int, int>> plusOne = x => x + 1;
-        var composed = ExposeUtils.SubstituteCalls((int x) => plusOne.Call(x));
+        var composed = ExpressionComposer.SubstituteCalls((int x) => plusOne.Call(x));
 
         var param = Expression.Parameter(typeof(int), "x");
         var expected = Expression.Lambda<Func<int, int>>(
