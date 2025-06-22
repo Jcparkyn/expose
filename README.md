@@ -13,10 +13,12 @@ I haven't published this on NuGet yet. For now, just copy-paste the file Expose.
 **Composing expressions:**
 
 ```cs
+using Expose;
+
 Expression<Func<int, bool>> isNegative = x => x < 0;
 Expression<Func<int, int>> mod2 = x => x % 2;
 
-Expression<Func<int, bool>> composed = Expose.SubstituteCalls(
+Expression<Func<int, bool>> composed = ExpressionComposer.SubstituteCalls(
     // This replaces the .Call() usages with the actual expressions.
     (int x) => isNegative.Call(x) || mod2.Call(x) == 1
 );
@@ -25,6 +27,8 @@ Expression<Func<int, bool>> composed = Expose.SubstituteCalls(
 **Optional: Shorthand usage with LINQ and/or EF Core**
 
 ```cs
+using Expose;
+
 Expression<Func<int, bool>> isNegative = x => x < 0;
 Expression<Func<int, int>> mod2 = x => x % 2;
 
