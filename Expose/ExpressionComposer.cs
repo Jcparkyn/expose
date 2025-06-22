@@ -9,22 +9,6 @@ using System.Reflection;
 /// </summary>
 public static class ExpressionComposer
 {
-    /// <summary>
-    /// Returns an expression that is equivalent to <c>x => second(first(x))</c>
-    /// </summary>
-    public static Expression<Func<T1, T3>> Then<T1, T2, T3>(
-        this Expression<Func<T1, T2>> first,
-        Expression<Func<T2, T3>> second)
-    {
-        _ = first ?? throw new ArgumentNullException(nameof(first));
-        var firstParameter = first.Parameters[0];
-        var firstBody = first.Body;
-
-        var replacedBody = Expression.Invoke(second, firstBody);
-
-        return Expression.Lambda<Func<T1, T3>>(replacedBody, firstParameter);
-    }
-
     private static Expression<TDelegate> SubstituteCallsInternal<TDelegate>(Expression<TDelegate> value)
     {
         // Separate method name so we don't accidentally call the same method recursively.

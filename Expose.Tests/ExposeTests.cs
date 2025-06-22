@@ -6,16 +6,6 @@ namespace Expose.Tests;
 public class ExposeTests
 {
     [Fact]
-    public void Then()
-    {
-        Expression<Func<int, string>> first = x => x.ToString();
-        var composed = first.Then(x => x + "!");
-        var input = 4;
-        var output = composed.Compile().Invoke(input);
-        output.Should().Be("4!");
-    }
-
-    [Fact]
     public void Compose()
     {
         Expression<Func<int, bool>> isNegative = x => x < 0;
