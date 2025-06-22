@@ -1,0 +1,41 @@
+name: Deploy Main
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to NuGet'
+        default: true
+        type: boolean
+
+env:
+  NETCORE_VERSION: 9.0.x
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  NUGET_FEED: https://api.nuget.org/v3/index.json
+  NUGET_KEY: ${{ secrets.NUGET_KEY }}
+
+jobs:
+  deploy:
+    name: Publish NuGet Packages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET Core ${{ env.NETCORE_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.NETCORE_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Run Tests
+        run: dotnet test -c Release --no-restore
+
+      - name: Pack
+        run: dotnet pack -v normal -c Release -o nupkg --no-restore Expose/
+
+      - name: Push to NuGet Feed
+        if: github.event.inputs.publish == 'true'
+        run: dotnet nuget push ./nupkg/*.nupkg --source $NUGET_FEED --api-key $NUGET_KEY --skip-duplicate
