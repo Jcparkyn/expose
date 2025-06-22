@@ -1,6 +1,6 @@
 # Expose
 
-Expose is a small C# library for combining and composing expression trees, with full type safety.
+Expose is a small C# library for combining and composing expression trees, with full type safety and zero dependencies.
 
 This can be used with LINQ, EF Core, and anything else that works with expression trees.
 
