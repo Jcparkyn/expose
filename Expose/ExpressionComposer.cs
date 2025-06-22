@@ -26,6 +26,9 @@ public static partial class ExpressionComposer
     /// <inheritdoc cref="SubstituteCalls{TDelegate}(Expression{TDelegate})"/>
     public static Expression<Func<T1, T2, T3>> SubstituteCalls<T1, T2, T3>(Expression<Func<T1, T2, T3>> value) => SubstituteCallsInternal(value);
 
+    /// <inheritdoc cref="SubstituteCalls{TDelegate}(Expression{TDelegate})"/>
+    public static Expression<Func<T1, T2, T3, T4>> SubstituteCalls<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4>> value) => SubstituteCallsInternal(value);
+
     private static Expression<TDelegate> SubstituteCallsInternal<TDelegate>(Expression<TDelegate> value)
     {
         // Separate method name so we don't accidentally call the same method recursively.

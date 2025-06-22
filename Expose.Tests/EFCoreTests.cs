@@ -84,22 +84,7 @@ public class MyEntity
     public required string LastName { get; set; }
 }
 
-public class MyDbContext : DbContext
+public class MyDbContext(DbContextOptions<MyDbContext> options) : DbContext(options)
 {
     public DbSet<MyEntity> MyEntities { get; set; }
-
-    public MyDbContext(DbContextOptions<MyDbContext> options) : base(options) { }
-}
-
-record WhyDoINeedToDoThis(ILoggerFactory factory) : ILoggerProvider
-{
-    public ILogger CreateLogger(string categoryName)
-    {
-        return factory.CreateLogger(categoryName);
-    }
-
-    public void Dispose()
-    {
-        factory.Dispose();
-    }
 }
