@@ -3,26 +3,34 @@
 using System.Linq.Expressions;
 using System.Reflection;
 
-internal sealed class CallMethodReplacer : ExpressionVisitor
+internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
 {
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
         if (node.Method.Name == nameof(ExtensionMethods.Call) &&
             node.Method.DeclaringType == typeof(ExtensionMethods))
         {
-            var callee = node.Arguments[0];
+            var callee = SimplifyCallee(node.Arguments[0]);
             var argument = node.Arguments[1];
 
+            if (inline)
+            {
+                // Only inline if the callee is a lambda expression
+                if (callee is ConstantExpression ce && ce.Value is LambdaExpression lambda)
+                {
+                    // Replace parameters in the lambda with the argument
+                    var replacer = new ParameterReplaceVisitor(lambda.Parameters[0], argument);
+                    return Visit(replacer.Visit(lambda.Body));
+                }
+            }
+
             // Replace the Call method call with an invocation of the callee
-            return Expression.Invoke(SimplifyCallee(callee), argument);
+            var invokeExpr = Expression.Invoke(callee, argument);
+
+            return invokeExpr;
         }
 
         return base.VisitMethodCall(node);
-    }
-
-    protected override Expression VisitLambda<T>(Expression<T> node)
-    {
-        return base.VisitLambda(node);
     }
 
     /// <summary>
@@ -44,5 +52,14 @@ internal sealed class CallMethodReplacer : ExpressionVisitor
             };
         }
         return callee;
+    }
+
+    // Helper class to replace a parameter with an argument in an expression tree
+    private sealed class ParameterReplaceVisitor(ParameterExpression from, Expression to) : ExpressionVisitor
+    {
+        protected override Expression VisitParameter(ParameterExpression node)
+        {
+            return node == from ? to : base.VisitParameter(node);
+        }
     }
 }

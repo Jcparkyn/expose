@@ -66,14 +66,35 @@ public class ExposeTests
     public void Compose_SimpleFunction_ExpressionEquals()
     {
         Expression<Func<int, int>> plusOne = x => x + 1;
-        var composed = ExpressionComposer.SubstituteCalls((int x) => plusOne.Call(x));
+        var composed = ExpressionComposer.SubstituteCalls((int x) => plusOne.Call(x) * 2);
 
         var param = Expression.Parameter(typeof(int), "x");
-        var expected = Expression.Lambda<Func<int, int>>(
-            Expression.Invoke(plusOne, param),
-            param
-        );
+        Expression<Func<int, int>> expected = x => (x + 1) * 2;
 
         composed.ToString().Should().Be(expected.ToString());
     }
+
+    //[Fact]
+    //public void Compose_Inline_False_DoesNotInline()
+    //{
+    //    Expression<Func<int, int>> plusOne = x => x + 1;
+    //    var visitor = new Expose.CallMethodReplacer(inline: false);
+    //    var expr = (Expression<Func<int, int>>)(x => plusOne.Call(x));
+    //    var visited = visitor.Visit(expr.Body);
+
+    //    // Should be an InvokeExpression, not inlined
+    //    visited.Should().BeOfType<InvocationExpression>();
+    //}
+
+    //[Fact]
+    //public void Compose_Inline_True_DoesInline()
+    //{
+    //    Expression<Func<int, int>> plusOne = x => x + 1;
+    //    var visitor = new Expose.CallMethodReplacer(inline: true);
+    //    var expr = (Expression<Func<int, int>>)(x => plusOne.Call(x));
+    //    var visited = visitor.Visit(expr.Body);
+
+    //    // Should be a BinaryExpression (x + 1), not an InvokeExpression
+    //    visited.Should().BeOfType<BinaryExpression>();
+    //}
 }
