@@ -35,6 +35,18 @@ public static class ExtensionMethods
         throw new InvalidOperationException("This method should only be used inside expression trees, and never called");
     }
 
+    /// <inheritdoc cref="Call{TRet}(Expression{Func{TRet}})"/>
+    public static TRet Call<T1, T2, T3, TRet>(this Expression<Func<T1, T2, T3, TRet>> expr, T1 arg1, T2 arg2, T3 arg3)
+    {
+        throw new InvalidOperationException("This method should only be used inside expression trees, and never called");
+    }
+
+    /// <inheritdoc cref="Call{TRet}(Expression{Func{TRet}})"/>
+    public static TRet Call<T1, T2, T3, T4, TRet>(this Expression<Func<T1, T2, T3, T4, TRet>> expr, T1 arg1, T2 arg2, T3 arg3, T4 arg4)
+    {
+        throw new InvalidOperationException("This method should only be used inside expression trees, and never called");
+    }
+
     /// <summary>
     /// Replaces all calls to the <see
     /// cref="ExtensionMethods.Call{TRet}(Expression{Func{TRet}})">Call(...)</see> method in an <see

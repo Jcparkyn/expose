@@ -1,5 +1,6 @@
 ﻿namespace Expose;
 
+using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -11,21 +12,25 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
             node.Method.DeclaringType == typeof(ExtensionMethods))
         {
             var callee = SimplifyCallee(node.Arguments[0]);
-            var argument = node.Arguments[1];
+            var arguments = node.Arguments.Skip(1);
 
             if (inline)
             {
-                // Only inline if the callee is a lambda expression
-                if (callee is ConstantExpression ce && ce.Value is LambdaExpression lambda)
+                var lambda = callee switch
                 {
-                    // Replace parameters in the lambda with the argument
-                    var replacer = new ParameterReplaceVisitor(lambda.Parameters[0], argument);
-                    return Visit(replacer.Visit(lambda.Body));
-                }
+                    ConstantExpression { Value: LambdaExpression l } => l,
+                    _ => Expression.Lambda<Func<LambdaExpression>>(callee).Compile()()
+                };
+                // Replace parameters in the lambda with the arguments
+                var paramDict = arguments
+                    .Zip(lambda.Parameters, (arg, param) => (arg, param))
+                    .ToDictionary(t => t.param, t => t.arg);
+                var replacer = new ParameterReplaceVisitor(paramDict);
+                return Visit(replacer.Visit(lambda.Body));
             }
 
             // Replace the Call method call with an invocation of the callee
-            var invokeExpr = Expression.Invoke(callee, argument);
+            var invokeExpr = Expression.Invoke(callee, arguments);
 
             return invokeExpr;
         }
@@ -38,28 +43,32 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
     /// </summary>
     private static Expression SimplifyCallee(Expression callee)
     {
-        if (callee is MemberExpression
-            {
-                Expression: ConstantExpression { Value: { } constant },
-                Member: var member
-            })
+        if (callee is MemberExpression me)
         {
-            return member switch
+            switch (me.Expression, me.Member)
             {
-                FieldInfo fi => Expression.Constant(fi.GetValue(constant), callee.Type),
-                PropertyInfo pi => Expression.Constant(pi.GetValue(constant), callee.Type),
-                _ => callee
-            };
+                case (ConstantExpression ce, FieldInfo fi):
+                    return Expression.Constant(fi.GetValue(ce.Value), callee.Type);
+                case (ConstantExpression ce, PropertyInfo pi):
+                    return Expression.Constant(pi.GetValue(ce.Value), callee.Type);
+                case (null, FieldInfo fi) when fi.IsStatic:
+                    return Expression.Constant(fi.GetValue(null), callee.Type);
+                case (null, PropertyInfo pi):
+                    return Expression.Constant(pi.GetValue(null), callee.Type);
+            }
         }
         return callee;
     }
 
     // Helper class to replace a parameter with an argument in an expression tree
-    private sealed class ParameterReplaceVisitor(ParameterExpression from, Expression to) : ExpressionVisitor
+    private sealed class ParameterReplaceVisitor(Dictionary<ParameterExpression, Expression> substitutions)
+        : ExpressionVisitor
     {
         protected override Expression VisitParameter(ParameterExpression node)
         {
-            return node == from ? to : base.VisitParameter(node);
+            return substitutions.TryGetValue(node, out var replacement)
+                ? replacement
+                : base.VisitParameter(node);
         }
     }
 }
