@@ -11,7 +11,7 @@ public static class ExtensionMethods
     /// <summary>
     /// A method to represent a call to another expression, from within an expression tree. This
     /// should always be used with <see
-    /// cref="ExpressionComposer.SubstituteCalls{TDelegate}(Expression{TDelegate})"/> to replace the
+    /// cref="ExpressionComposer.SubstituteCalls{TDelegate}(Expression{TDelegate}, bool)"/> to replace the
     /// call with the actual method invocation.
     /// </summary>
     /// <returns>

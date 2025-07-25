@@ -139,32 +139,32 @@ public class ExposeTests
         compiled().Should().Be(5);
     }
 
-    //[Fact]
-    //public void Compose_Inline_False_DoesNotInline()
-    //{
-    //    Expression<Func<int, int>> plusOne = x => x + 1;
-    //    var visitor = new Expose.CallMethodReplacer(inline: false);
-    //    var expr = (Expression<Func<int, int>>)(x => plusOne.Call(x));
-    //    var visited = visitor.Visit(expr.Body);
+    [Fact]
+    public void ShouldInlineMethodExpression()
+    {
+        var composed = ExpressionComposer.SubstituteCalls(
+            () => GetPlusOneFromMethod().Call(4)
+        );
 
-    //    // Should be an InvokeExpression, not inlined
-    //    visited.Should().BeOfType<InvocationExpression>();
-    //}
+        composed.ToString().Should().Be("() => (4 + 1)");
+        var compiled = composed.Compile();
+        compiled().Should().Be(5);
+    }
 
-    //[Fact]
-    //public void Compose_Inline_True_DoesInline()
-    //{
-    //    Expression<Func<int, int>> plusOne = x => x + 1;
-    //    var visitor = new Expose.CallMethodReplacer(inline: true);
-    //    var expr = (Expression<Func<int, int>>)(x => plusOne.Call(x));
-    //    var visited = visitor.Visit(expr.Body);
+    [Fact]
+    public void ShouldNotInlineWhenInlineFalse()
+    {
+        var composed = ExpressionComposer.SubstituteCalls<Func<int, int>>(
+            x => TIMES_TWO.Call(x) + 1,
+            inline: false
+        );
 
-    //    // Should be a BinaryExpression (x + 1), not an InvokeExpression
-    //    visited.Should().BeOfType<BinaryExpression>();
-    //}
+        composed.ToString().Should().Be("x => (Invoke(ExposeTests.TIMES_TWO, x) + 1)");
+        composed.Compile()(7).Should().Be(15);
+    }
 
-    //private static void BeSameExpressionAs<T>(ObjectAssertions should, Expression<T> expected)
-    //{
-    //    should.NotBeSameAs;
-    //}
+    private Expression<Func<int, int>> GetPlusOneFromMethod()
+    {
+        return x => x + 1;
+    }
 }

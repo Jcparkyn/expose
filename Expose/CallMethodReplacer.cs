@@ -11,16 +11,12 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
         if (node.Method.Name == nameof(ExtensionMethods.Call) &&
             node.Method.DeclaringType == typeof(ExtensionMethods))
         {
-            var callee = SimplifyCallee(node.Arguments[0]);
+            var callee = node.Arguments[0];
             var arguments = node.Arguments.Skip(1);
 
             if (inline)
             {
-                var lambda = callee switch
-                {
-                    ConstantExpression { Value: LambdaExpression l } => l,
-                    _ => Expression.Lambda<Func<LambdaExpression>>(callee).Compile()()
-                };
+                var lambda = ExtractLambdaFromCallee(callee);
                 // Replace parameters in the lambda with the arguments
                 var paramDict = arguments
                     .Zip(lambda.Parameters, (arg, param) => (arg, param))
@@ -36,6 +32,50 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
         }
 
         return base.VisitMethodCall(node);
+    }
+
+    private static object GetExpressionValue(Expression callee)
+    {
+        if (callee is MemberExpression me)
+        {
+            switch (me.Expression, me.Member)
+            {
+                case (ConstantExpression ce, FieldInfo fi):
+                    return fi.GetValue(ce.Value);
+                case (ConstantExpression ce, PropertyInfo pi):
+                    return pi.GetValue(ce.Value);
+                case (null, FieldInfo fi) when fi.IsStatic:
+                    return fi.GetValue(null);
+                case (null, PropertyInfo pi):
+                    return pi.GetValue(null);
+            }
+        }
+        return Expression.Lambda<Func<object>>(callee).Compile()();
+    }
+
+    private static LambdaExpression ExtractLambdaFromCallee(Expression callee)
+    {
+        if (!typeof(LambdaExpression).IsAssignableFrom(callee.Type))
+        {
+            throw new InvalidOperationException($"Expected a LambdaExpression as first argument to .Call(), but got {callee.Type}");
+        }
+        if (callee is MemberExpression me)
+        {
+            // Fast path to avoid Compile() in common cases
+            object? constantValue = (me.Expression, me.Member) switch
+            {
+                (ConstantExpression ce, FieldInfo fi) => fi.GetValue(ce.Value),
+                (ConstantExpression ce, PropertyInfo pi) => pi.GetValue(ce.Value),
+                (null, FieldInfo fi) when fi.IsStatic => fi.GetValue(null),
+                (null, PropertyInfo pi) => pi.GetValue(null),
+                _ => null
+            };
+            if (constantValue is LambdaExpression lambdaExpr)
+            {
+                return lambdaExpr;
+            }
+        }
+        return Expression.Lambda<Func<LambdaExpression>>(callee).Compile()();
     }
 
     /// <summary>
