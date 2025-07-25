@@ -8,8 +8,7 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
 {
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (node.Method.Name == nameof(ExtensionMethods.Call) &&
-            node.Method.DeclaringType == typeof(ExtensionMethods))
+        if (Attribute.IsDefined(node.Method, typeof(ExpressionCallMethodAttribute)))
         {
             var callee = node.Arguments[0];
             var arguments = node.Arguments.Skip(1);
@@ -32,25 +31,6 @@ internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
         }
 
         return base.VisitMethodCall(node);
-    }
-
-    private static object GetExpressionValue(Expression callee)
-    {
-        if (callee is MemberExpression me)
-        {
-            switch (me.Expression, me.Member)
-            {
-                case (ConstantExpression ce, FieldInfo fi):
-                    return fi.GetValue(ce.Value);
-                case (ConstantExpression ce, PropertyInfo pi):
-                    return pi.GetValue(ce.Value);
-                case (null, FieldInfo fi) when fi.IsStatic:
-                    return fi.GetValue(null);
-                case (null, PropertyInfo pi):
-                    return pi.GetValue(null);
-            }
-        }
-        return Expression.Lambda<Func<object>>(callee).Compile()();
     }
 
     private static LambdaExpression ExtractLambdaFromCallee(Expression callee)
