@@ -19,7 +19,7 @@ public class ExposeTests
     public void SubstituteCalls_NoParamsOut()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            () => PLUS_ONE.Call(4) + TIMES_TWO.Call(1)
+            () => PLUS_ONE.CallInline(4) + TIMES_TWO.CallInline(1)
         );
 
         var compiled = composed.Compile();
@@ -30,7 +30,7 @@ public class ExposeTests
     public void SubstituteCalls_OneParamOut()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => TIMES_TWO.Call(x) + 1
+            (int x) => TIMES_TWO.CallInline(x) + 1
         );
 
         composed.ToString().Should().Be("x => ((x * 2) + 1)");
@@ -41,7 +41,7 @@ public class ExposeTests
     public void SubstituteCalls_TwoParamsOut()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x, int y) => TIMES_TWO.Call(x) + y
+            (int x, int y) => TIMES_TWO.CallInline(x) + y
         );
 
         composed.ToString().Should().Be("(x, y) => ((x * 2) + y)");
@@ -52,7 +52,7 @@ public class ExposeTests
     public void SubstituteCalls_ThreeParamsOut()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x, int y, int z) => TIMES_TWO.Call(x) + y + z
+            (int x, int y, int z) => TIMES_TWO.CallInline(x) + y + z
         );
 
         composed.ToString().Should().Be("(x, y, z) => (((x * 2) + y) + z)");
@@ -63,7 +63,7 @@ public class ExposeTests
     public void SubstituteCalls_NoParamsIn()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => ALMOST_PI.Call() + x
+            (int x) => ALMOST_PI.CallInline() + x
         );
 
         composed.ToString().Should().Be("x => (3 + x)");
@@ -74,7 +74,7 @@ public class ExposeTests
     public void SubstituteCalls_OneParamIn()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => TIMES_TWO.Call(x) + 1
+            (int x) => TIMES_TWO.CallInline(x) + 1
         );
 
         composed.ToString().Should().Be("x => ((x * 2) + 1)");
@@ -85,7 +85,7 @@ public class ExposeTests
     public void SubstituteCalls_TwoParamsIn()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => MULT_2.Call(x, 3) + 1
+            (int x) => MULT_2.CallInline(x, 3) + 1
         );
 
         composed.ToString().Should().Be("x => ((x * 3) + 1)");
@@ -96,7 +96,7 @@ public class ExposeTests
     public void SubstituteCalls_ThreeParamsIn()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => MULT_3.Call(x, 3, x + 1) + 1
+            (int x) => MULT_3.CallInline(x, 3, x + 1) + 1
         );
 
         composed.ToString().Should().Be("x => (((x * 3) * (x + 1)) + 1)");
@@ -107,7 +107,7 @@ public class ExposeTests
     public void SubstituteCalls_FourParamsIn()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            (int x) => MULT_4.Call(x, 3, x + 1, x + 2) + 1
+            (int x) => MULT_4.CallInline(x, 3, x + 1, x + 2) + 1
         );
 
         composed.ToString().Should().Be("x => ((((x * 3) * (x + 1)) * (x + 2)) + 1)");
@@ -119,7 +119,7 @@ public class ExposeTests
     {
         Expression<Func<int, int>> plusOne = x => x + 1;
         var composed = ExpressionComposer.SubstituteCalls(
-            () => plusOne.Call(4)
+            () => plusOne.CallInline(4)
         );
 
         composed.ToString().Should().Be("() => (4 + 1)");
@@ -131,7 +131,7 @@ public class ExposeTests
     public void ShouldInlineProperty()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            () => PlusOneProperty.Call(4)
+            () => PlusOneProperty.CallInline(4)
         );
 
         composed.ToString().Should().Be("() => (4 + 1)");
@@ -143,7 +143,7 @@ public class ExposeTests
     public void ShouldInlineMethodExpression()
     {
         var composed = ExpressionComposer.SubstituteCalls(
-            () => GetPlusOneFromMethod().Call(4)
+            () => GetPlusOneFromMethod().CallInline(4)
         );
 
         composed.ToString().Should().Be("() => (4 + 1)");
@@ -154,15 +154,15 @@ public class ExposeTests
     [Fact]
     public void ShouldNotInlineWhenInlineFalse()
     {
-        var composed = ExpressionComposer.SubstituteCalls<Func<int, int>>(
-            x => TIMES_TWO.Call(x) + 1,
-            inline: false
+        var composed = ExpressionComposer.SubstituteCalls(
+            (int x) => TIMES_TWO.CallInvoke(x) + 1
         );
 
         composed.ToString().Should().Be("x => (Invoke(ExposeTests.TIMES_TWO, x) + 1)");
         composed.Compile()(7).Should().Be(15);
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Test")]
     private Expression<Func<int, int>> GetPlusOneFromMethod()
     {
         return x => x + 1;

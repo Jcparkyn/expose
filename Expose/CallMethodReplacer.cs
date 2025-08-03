@@ -1,19 +1,18 @@
 ﻿namespace Expose;
 
-using System.Data;
 using System.Linq.Expressions;
 using System.Reflection;
 
-internal sealed class CallMethodReplacer(bool inline = true) : ExpressionVisitor
+internal sealed class CallMethodReplacer : ExpressionVisitor
 {
     protected override Expression VisitMethodCall(MethodCallExpression node)
     {
-        if (Attribute.IsDefined(node.Method, typeof(ExpressionCallMethodAttribute)))
+        if (node.Method.GetCustomAttribute<ExpressionCallMethodAttribute>() is { } attr)
         {
             var callee = node.Arguments[0];
             var arguments = node.Arguments.Skip(1);
 
-            if (inline)
+            if (attr.Inline)
             {
                 var lambda = ExtractLambdaFromCallee(callee);
                 // Replace parameters in the lambda with the arguments

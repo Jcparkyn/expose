@@ -8,43 +8,44 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using Xunit.Abstractions;
 
 public class EFCoreTests(ITestOutputHelper output)
 {
     [Fact]
-    public void Compose_WithEFCore_Where()
+    public async Task Compose_WithEFCore_WhereAsync()
     {
         var options = Connect();
 
         Expression<Func<int, bool>> isNegative = x => x < 0;
 
         using var context = new MyDbContext(options);
-        var result = context.MyEntities
-            .Where(e => isNegative.Call(e.Age))
+        var result = await context.MyEntities
+            .Where(e => isNegative.CallInline(e.Age))
             .SubstituteCalls()
-            .Single();
+            .SingleAsync();
 
         result.Age.Should().Be(-1);
         result.FirstName.Should().Be("Jeff");
     }
 
     [Fact]
-    public void Compose_WithEFCore_Select()
+    public async Task Compose_WithEFCore_Select()
     {
         var options = Connect();
 
         Expression<Func<MyEntity, string>> getFullName = e => e.FirstName + " " + e.LastName;
 
         using var context = new MyDbContext(options);
-        var result = context.MyEntities
+        var result = await context.MyEntities
             .Select(e => new
             {
                 e.Id,
-                FullName = getFullName.Call(e),
+                FullName = getFullName.CallInline(e),
             })
             .SubstituteCalls()
-            .Single(e => e.FullName == "Mike Stack");
+            .SingleAsync(e => e.FullName == "Mike Stack");
         result.FullName.Should().Be("Mike Stack");
     }
 
